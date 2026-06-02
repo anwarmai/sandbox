@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swim Meet Manager</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; color: #1a202c; min-height: 100vh; }
+  header { background: #1a56db; color: white; padding: 16px 24px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  header h1 { font-size: 1.5rem; font-weight: 700; }
+  header span { font-size: 1.6rem; }
+  nav { background: #1e429f; display: flex; padding: 0 16px; overflow-x: auto; }
+  nav button { background: none; border: none; color: #93c5fd; padding: 12px 20px; cursor: pointer; font-size: 0.95rem; font-weight: 500; border-bottom: 3px solid transparent; white-space: nowrap; transition: all 0.2s; }
+  nav button:hover { color: white; }
+  nav button.active { color: white; border-bottom-color: #60a5fa; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+  .tab { display: none; }
+  .tab.active { display: block; }
+  .card { background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 20px; margin-bottom: 20px; }
+  .card h2 { font-size: 1.1rem; font-weight: 600; color: #1e429f; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e8f0fe; }
+  .form-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; }
+  .form-group label { font-size: 0.8rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.04em; }
+  input, select, textarea { border: 1.5px solid #d1d5db; border-radius: 6px; padding: 8px 10px; font-size: 0.95rem; outline: none; width: 100%; transition: border-color 0.2s; }
+  input:focus, select:focus, textarea:focus { border-color: #1a56db; }
+  button.btn { border: none; border-radius: 6px; padding: 9px 18px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.1s; }
+  button.btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  button.btn:active { transform: translateY(0); }
+  .btn-primary { background: #1a56db; color: white; }
+  .btn-danger { background: #ef4444; color: white; font-size: 0.8rem; padding: 5px 10px; }
+  .btn-success { background: #10b981; color: white; }
+  .btn-secondary { background: #6b7280; color: white; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+  th { background: #f1f5f9; color: #374151; font-weight: 600; padding: 10px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  tr:hover td { background: #f8faff; }
+  .badge { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 0.78rem; font-weight: 600; }
+  .badge-dq { background: #fee2e2; color: #b91c1c; }
+  .badge-ok { background: #d1fae5; color: #065f46; }
+  .badge-dns { background: #fef3c7; color: #92400e; }
+  .split-row { display: none; background: #f8faff; }
+  .split-row.open { display: table-row; }
+  .split-toggle { cursor: pointer; color: #1a56db; text-decoration: underline; font-size: 0.82rem; }
+  .splits-inner { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 0; }
+  .split-chip { background: #e8f0fe; border-radius: 4px; padding: 3px 10px; font-size: 0.82rem; color: #1e429f; }
+  .filter-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
+  .section-title { font-size: 1rem; font-weight: 700; color: #374151; margin: 20px 0 10px; }
+  .notice { color: #6b7280; font-size: 0.9rem; padding: 12px; text-align: center; }
+  .results-entry { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+  .results-entry h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 10px; color: #374151; }
+  .time-input-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .time-input-row label { font-size: 0.85rem; color: #4b5563; min-width: 80px; }
+  .split-inputs { margin-top: 10px; }
+  .split-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .split-input-row label { font-size: 0.82rem; color: #6b7280; min-width: 70px; }
+  .rank-badge { display: inline-block; width: 26px; height: 26px; border-radius: 50%; text-align: center; line-height: 26px; font-size: 0.8rem; font-weight: 700; }
+  .rank-1 { background: #fbbf24; color: #78350f; }
+  .rank-2 { background: #9ca3af; color: white; }
+  .rank-3 { background: #b45309; color: white; }
+  .rank-n { background: #e5e7eb; color: #374151; }
+  @media(max-width:600px) { .form-row { flex-direction: column; } }
+</style>
+</head>
+<body>
+<header>
+  <span>🏊</span>
+  <h1>Swim Meet Manager</h1>
+</header>
+<nav>
+  <button class="active" onclick="showTab('swimmers')">Swimmers</button>
+  <button onclick="showTab('events')">Events</button>
+  <button onclick="showTab('meets')">Meets</button>
+  <button onclick="showTab('heats')">Heats</button>
+  <button onclick="showTab('results')">Results</button>
+</nav>
+
+<div class="container">
+
+<!-- ===== SWIMMERS TAB ===== -->
+<div id="tab-swimmers" class="tab active">
+  <div class="card">
+    <h2>Add Swimmer</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Name *</label><input id="sw-name" placeholder="Full name"></div>
+      <div class="form-group"><label>Date of Birth</label><input id="sw-dob" type="date"></div>
+      <div class="form-group"><label>Team</label><input id="sw-team" placeholder="Team name"></div>
+      <button class="btn btn-primary" onclick="addSwimmer()">Add Swimmer</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Swimmers</h2>
+    <div id="swimmers-table"><div class="notice">Loading...</div></div>
+  </div>
+</div>
+
+<!-- ===== EVENTS TAB ===== -->
+<div id="tab-events" class="tab">
+  <div class="card">
+    <h2>Add Event</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Name *</label><input id="ev-name" placeholder="e.g. 100m Freestyle"></div>
+      <div class="form-group"><label>Distance (m)</label><input id="ev-distance" type="number" placeholder="100"></div>
+      <div class="form-group">
+        <label>Stroke</label>
+        <select id="ev-stroke">
+          <option value="">— select —</option>
+          <option>Freestyle</option><option>Backstroke</option><option>Breaststroke</option>
+          <option>Butterfly</option><option>Individual Medley</option><option>Medley Relay</option><option>Freestyle Relay</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="addEvent()">Add Event</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Events</h2>
+    <div id="events-table"><div class="notice">Loading...</div></div>
+  </div>
+</div>
+
+<!-- ===== MEETS TAB ===== -->
+<div id="tab-meets" class="tab">
+  <div class="card">
+    <h2>Add Meet</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Name *</label><input id="mt-name" placeholder="Meet name"></div>
+      <div class="form-group"><label>Date</label><input id="mt-date" type="date"></div>
+      <div class="form-group"><label>Location</label><input id="mt-location" placeholder="Venue / City"></div>
+      <button class="btn btn-primary" onclick="addMeet()">Add Meet</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Meets</h2>
+    <div id="meets-table"><div class="notice">Loading...</div></div>
+  </div>
+</div>
+
+<!-- ===== HEATS TAB ===== -->
+<div id="tab-heats" class="tab">
+  <div class="card">
+    <h2>Create Heat</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Meet *</label><select id="ht-meet"><option value="">— select —</option></select></div>
+      <div class="form-group"><label>Event *</label><select id="ht-event"><option value="">— select —</option></select></div>
+      <div class="form-group"><label>Heat #</label><input id="ht-number" type="number" min="1" value="1"></div>
+      <div class="form-group"><label>Scheduled Time</label><input id="ht-time" type="time"></div>
+      <button class="btn btn-primary" onclick="addHeat()">Create Heat</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Filter Heats</h2>
+    <div class="filter-row">
+      <div class="form-group"><label>Meet</label><select id="filter-meet" onchange="loadHeats()"><option value="">All Meets</option></select></div>
+      <div class="form-group"><label>Event</label><select id="filter-event" onchange="loadHeats()"><option value="">All Events</option></select></div>
+    </div>
+    <div id="heats-table"><div class="notice">Loading...</div></div>
+  </div>
+
+  <div class="card" id="assign-card" style="display:none">
+    <h2 id="assign-title">Assign Swimmer to Heat</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Swimmer *</label><select id="entry-swimmer"><option value="">— select —</option></select></div>
+      <div class="form-group"><label>Lane *</label><input id="entry-lane" type="number" min="1" max="10" value="1"></div>
+      <button class="btn btn-primary" onclick="addEntry()">Assign</button>
+    </div>
+    <div class="section-title">Lane Assignments</div>
+    <div id="entries-table"><div class="notice">None yet.</div></div>
+  </div>
+</div>
+
+<!-- ===== RESULTS TAB ===== -->
+<div id="tab-results" class="tab">
+  <div class="card">
+    <h2>Select Heat to Enter / View Results</h2>
+    <div class="filter-row">
+      <div class="form-group"><label>Meet</label><select id="res-meet" onchange="loadResHeats()"><option value="">— select —</option></select></div>
+      <div class="form-group"><label>Heat</label><select id="res-heat" onchange="loadHeatResults()"><option value="">— select —</option></select></div>
+    </div>
+  </div>
+
+  <div id="results-entry-area" style="display:none">
+    <div class="card">
+      <h2>Enter / Edit Results</h2>
+      <div id="results-entry-form"></div>
+      <div style="margin-top:16px">
+        <button class="btn btn-success" onclick="saveAllResults()">Save All Results</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Results Leaderboard</h2>
+      <div id="results-display"><div class="notice">Save results to see leaderboard.</div></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+const API = '';
+let selectedHeatId = null;
+let heatEntries = [];
+
+// ---- Utilities ----
+function fmtTime(ms) {
+  if (ms == null) return '—';
+  const totalSec = ms / 1000;
+  const min = Math.floor(totalSec / 60);
+  const sec = (totalSec % 60).toFixed(2).padStart(5, '0');
+  return min > 0 ? `${min}:${sec}` : `${sec}s`;
+}
+
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'swimmers') loadSwimmers();
+  if (name === 'events') loadEvents();
+  if (name === 'meets') loadMeets();
+  if (name === 'heats') { loadHeatsSelects(); loadHeats(); }
+  if (name === 'results') { loadResSelects(); }
+}
+
+// ===== SWIMMERS =====
+async function loadSwimmers() {
+  const swimmers = await api('GET', '/swimmers/');
+  const el = document.getElementById('swimmers-table');
+  if (!swimmers.length) { el.innerHTML = '<div class="notice">No swimmers yet.</div>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Name</th><th>DOB</th><th>Team</th><th>Actions</th></tr></thead>
+    <tbody>${swimmers.map(s => `
+      <tr>
+        <td><strong>${s.name}</strong></td>
+        <td>${s.dob || '—'}</td>
+        <td>${s.team || '—'}</td>
+        <td><button class="btn btn-danger" onclick="deleteSwimmer(${s.id})">Delete</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+async function addSwimmer() {
+  const name = document.getElementById('sw-name').value.trim();
+  if (!name) { alert('Name is required'); return; }
+  await api('POST', '/swimmers/', { name, dob: document.getElementById('sw-dob').value || null, team: document.getElementById('sw-team').value || null });
+  document.getElementById('sw-name').value = '';
+  document.getElementById('sw-dob').value = '';
+  document.getElementById('sw-team').value = '';
+  loadSwimmers();
+}
+
+async function deleteSwimmer(id) {
+  if (!confirm('Delete this swimmer?')) return;
+  await api('DELETE', `/swimmers/${id}`);
+  loadSwimmers();
+}
+
+// ===== EVENTS =====
+async function loadEvents() {
+  const events = await api('GET', '/events/');
+  const el = document.getElementById('events-table');
+  if (!events.length) { el.innerHTML = '<div class="notice">No events yet.</div>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Name</th><th>Distance</th><th>Stroke</th><th>Actions</th></tr></thead>
+    <tbody>${events.map(e => `
+      <tr>
+        <td><strong>${e.name}</strong></td>
+        <td>${e.distance ? e.distance + 'm' : '—'}</td>
+        <td>${e.stroke || '—'}</td>
+        <td><button class="btn btn-danger" onclick="deleteEvent(${e.id})">Delete</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+async function addEvent() {
+  const name = document.getElementById('ev-name').value.trim();
+  if (!name) { alert('Name is required'); return; }
+  const distance = document.getElementById('ev-distance').value;
+  await api('POST', '/events/', { name, distance: distance ? parseInt(distance) : null, stroke: document.getElementById('ev-stroke').value || null });
+  document.getElementById('ev-name').value = '';
+  document.getElementById('ev-distance').value = '';
+  document.getElementById('ev-stroke').value = '';
+  loadEvents();
+}
+
+async function deleteEvent(id) {
+  if (!confirm('Delete this event?')) return;
+  await api('DELETE', `/events/${id}`);
+  loadEvents();
+}
+
+// ===== MEETS =====
+async function loadMeets() {
+  const meets = await api('GET', '/meets/');
+  const el = document.getElementById('meets-table');
+  if (!meets.length) { el.innerHTML = '<div class="notice">No meets yet.</div>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Name</th><th>Date</th><th>Location</th><th>Actions</th></tr></thead>
+    <tbody>${meets.map(m => `
+      <tr>
+        <td><strong>${m.name}</strong></td>
+        <td>${m.date || '—'}</td>
+        <td>${m.location || '—'}</td>
+        <td><button class="btn btn-danger" onclick="deleteMeet(${m.id})">Delete</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+async function addMeet() {
+  const name = document.getElementById('mt-name').value.trim();
+  if (!name) { alert('Name is required'); return; }
+  await api('POST', '/meets/', { name, date: document.getElementById('mt-date').value || null, location: document.getElementById('mt-location').value || null });
+  document.getElementById('mt-name').value = '';
+  document.getElementById('mt-date').value = '';
+  document.getElementById('mt-location').value = '';
+  loadMeets();
+}
+
+async function deleteMeet(id) {
+  if (!confirm('Delete this meet?')) return;
+  await api('DELETE', `/meets/${id}`);
+  loadMeets();
+}
+
+// ===== HEATS =====
+async function loadHeatsSelects() {
+  const [meets, events, swimmers] = await Promise.all([
+    api('GET', '/meets/'), api('GET', '/events/'), api('GET', '/swimmers/')
+  ]);
+
+  // Populate create heat form
+  ['ht-meet', 'filter-meet'].forEach(id => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">— select —</option>` + meets.map(m => `<option value="${m.id}">${m.name} ${m.date ? '('+m.date+')' : ''}</option>`).join('');
+    if (cur) sel.value = cur;
+  });
+  ['ht-event', 'filter-event'].forEach(id => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">— select —</option>` + events.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+    if (cur) sel.value = cur;
+  });
+
+  // Swimmer select for entry
+  const swSel = document.getElementById('entry-swimmer');
+  swSel.innerHTML = `<option value="">— select —</option>` + swimmers.map(s => `<option value="${s.id}">${s.name}${s.team ? ' ('+s.team+')' : ''}</option>`).join('');
+}
+
+async function loadHeats() {
+  const meetId = document.getElementById('filter-meet').value;
+  const eventId = document.getElementById('filter-event').value;
+  let url = '/heats/?';
+  if (meetId) url += `meet_id=${meetId}&`;
+  if (eventId) url += `event_id=${eventId}&`;
+  const heats = await api('GET', url);
+  const el = document.getElementById('heats-table');
+  if (!heats.length) { el.innerHTML = '<div class="notice">No heats found.</div>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Heat #</th><th>Meet</th><th>Event</th><th>Scheduled</th><th>Actions</th></tr></thead>
+    <tbody>${heats.map(h => `
+      <tr>
+        <td><strong>Heat ${h.heat_number}</strong></td>
+        <td>${h.meet_name || h.meet_id}</td>
+        <td>${h.event_name || h.event_id}</td>
+        <td>${h.scheduled_time || '—'}</td>
+        <td>
+          <button class="btn btn-primary" style="font-size:0.8rem;padding:5px 10px" onclick="selectHeat(${h.id}, '${(h.event_name||'').replace(/'/g,"\\'")} – Heat ${h.heat_number}')">Assign Lanes</button>
+          <button class="btn btn-danger" onclick="deleteHeat(${h.id})">Delete</button>
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+async function addHeat() {
+  const meet_id = parseInt(document.getElementById('ht-meet').value);
+  const event_id = parseInt(document.getElementById('ht-event').value);
+  const heat_number = parseInt(document.getElementById('ht-number').value);
+  if (!meet_id || !event_id || !heat_number) { alert('Meet, event, and heat number required'); return; }
+  await api('POST', '/heats/', { meet_id, event_id, heat_number, scheduled_time: document.getElementById('ht-time').value || null });
+  document.getElementById('ht-time').value = '';
+  loadHeats();
+}
+
+async function deleteHeat(id) {
+  if (!confirm('Delete this heat?')) return;
+  await api('DELETE', `/heats/${id}`);
+  loadHeats();
+  if (selectedHeatId === id) {
+    selectedHeatId = null;
+    document.getElementById('assign-card').style.display = 'none';
+  }
+}
+
+async function selectHeat(id, title) {
+  selectedHeatId = id;
+  document.getElementById('assign-card').style.display = 'block';
+  document.getElementById('assign-title').textContent = `Lane Assignments — ${title}`;
+  loadEntries();
+  document.getElementById('assign-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function loadEntries() {
+  if (!selectedHeatId) return;
+  heatEntries = await api('GET', `/heat_entries/?heat_id=${selectedHeatId}`);
+  const el = document.getElementById('entries-table');
+  if (!heatEntries.length) { el.innerHTML = '<div class="notice">No assignments yet.</div>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Lane</th><th>Swimmer</th><th>Team</th><th></th></tr></thead>
+    <tbody>${heatEntries.map(e => `
+      <tr>
+        <td>${e.lane}</td>
+        <td>${e.swimmer_name}</td>
+        <td>${e.team || '—'}</td>
+        <td><button class="btn btn-danger" onclick="deleteEntry(${e.id})">Remove</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+async function addEntry() {
+  const swimmer_id = parseInt(document.getElementById('entry-swimmer').value);
+  const lane = parseInt(document.getElementById('entry-lane').value);
+  if (!selectedHeatId || !swimmer_id || !lane) { alert('Select swimmer and lane'); return; }
+  try {
+    await api('POST', '/heat_entries/', { heat_id: selectedHeatId, swimmer_id, lane });
+    loadEntries();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function deleteEntry(id) {
+  await api('DELETE', `/heat_entries/${id}`);
+  loadEntries();
+}
+
+// ===== RESULTS =====
+async function loadResSelects() {
+  const meets = await api('GET', '/meets/');
+  const sel = document.getElementById('res-meet');
+  sel.innerHTML = `<option value="">— select meet —</option>` + meets.map(m => `<option value="${m.id}">${m.name} ${m.date ? '('+m.date+')' : ''}</option>`).join('');
+}
+
+async function loadResHeats() {
+  const meetId = document.getElementById('res-meet').value;
+  const sel = document.getElementById('res-heat');
+  sel.innerHTML = '<option value="">— select heat —</option>';
+  document.getElementById('results-entry-area').style.display = 'none';
+  if (!meetId) return;
+  const heats = await api('GET', `/heats/?meet_id=${meetId}`);
+  sel.innerHTML = `<option value="">— select heat —</option>` + heats.map(h => `<option value="${h.id}">${h.event_name || 'Event '+h.event_id} – Heat ${h.heat_number}</option>`).join('');
+}
+
+async function loadHeatResults() {
+  const heatId = document.getElementById('res-heat').value;
+  if (!heatId) { document.getElementById('results-entry-area').style.display = 'none'; return; }
+  document.getElementById('results-entry-area').style.display = 'block';
+
+  const entries = await api('GET', `/heat_entries/?heat_id=${heatId}`);
+  const resultsArea = document.getElementById('results-entry-form');
+
+  // Also load existing results
+  const existing = await api('GET', `/heats/${heatId}/results`);
+  const existingMap = {};
+  existing.forEach(r => { existingMap[r.heat_entry_id] = r; });
+
+  resultsArea.innerHTML = entries.map(e => {
+    const ex = existingMap[e.id] || {};
+    const timeVal = ex.final_time_ms != null ? ex.final_time_ms : '';
+    const dq = ex.disqualified ? 'checked' : '';
+    const dqReason = ex.dq_reason || '';
+    // splits
+    const splits = ex.splits || [];
+    return `
+    <div class="results-entry" id="entry-form-${e.id}">
+      <h4>Lane ${e.lane} — ${e.swimmer_name}${e.team ? ' ('+e.team+')' : ''}</h4>
+      <div class="time-input-row">
+        <label>Time (ms):</label>
+        <input type="number" id="time-${e.id}" placeholder="e.g. 58320" value="${timeVal}" style="width:160px">
+        <label style="margin-left:12px"><input type="checkbox" id="dq-${e.id}" ${dq}> DQ</label>
+        <input type="text" id="dqr-${e.id}" placeholder="DQ reason" value="${dqReason}" style="width:200px">
+      </div>
+      <div class="split-inputs" id="splits-area-${e.id}">
+        <div class="section-title" style="font-size:0.82rem;margin:10px 0 6px">Splits (optional)</div>
+        <div id="splits-list-${e.id}">${renderSplitInputs(e.id, splits)}</div>
+        <button class="btn btn-secondary" style="margin-top:6px;font-size:0.8rem;padding:5px 12px" onclick="addSplitRow(${e.id})">+ Split</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Load leaderboard
+  refreshLeaderboard(heatId, existing);
+}
+
+function renderSplitInputs(entryId, splits) {
+  if (!splits.length) return '';
+  return splits.map((s, i) => `
+    <div class="split-input-row" id="split-row-${entryId}-${i}">
+      <label>Split ${i+1}:</label>
+      <input type="number" placeholder="Distance (m)" value="${s.distance||''}" style="width:120px" class="split-dist-${entryId}">
+      <input type="number" placeholder="Time (ms)" value="${s.time_ms||''}" style="width:130px" class="split-time-${entryId}">
+    </div>`).join('');
+}
+
+function addSplitRow(entryId) {
+  const container = document.getElementById(`splits-list-${entryId}`);
+  const idx = container.querySelectorAll('.split-input-row').length;
+  const div = document.createElement('div');
+  div.className = 'split-input-row';
+  div.id = `split-row-${entryId}-${idx}`;
+  div.innerHTML = `
+    <label>Split ${idx+1}:</label>
+    <input type="number" placeholder="Distance (m)" style="width:120px" class="split-dist-${entryId}">
+    <input type="number" placeholder="Time (ms)" style="width:130px" class="split-time-${entryId}">`;
+  container.appendChild(div);
+}
+
+async function saveAllResults() {
+  const heatId = document.getElementById('res-heat').value;
+  const entries = await api('GET', `/heat_entries/?heat_id=${heatId}`);
+
+  for (const e of entries) {
+    const timeEl = document.getElementById(`time-${e.id}`);
+    const dqEl = document.getElementById(`dq-${e.id}`);
+    const dqrEl = document.getElementById(`dqr-${e.id}`);
+    if (!timeEl) continue;
+
+    const final_time_ms = timeEl.value ? parseInt(timeEl.value) : null;
+    const disqualified = dqEl.checked;
+    const dq_reason = dqrEl.value || null;
+
+    if (final_time_ms === null && !disqualified) continue; // nothing entered
+
+    const race = await api('POST', '/races/', {
+      heat_entry_id: e.id, final_time_ms, disqualified, dq_reason
+    });
+
+    // Collect splits
+    const distEls = document.querySelectorAll(`.split-dist-${e.id}`);
+    const timeEls = document.querySelectorAll(`.split-time-${e.id}`);
+    const splits = [];
+    for (let i = 0; i < distEls.length; i++) {
+      const dist = distEls[i].value ? parseInt(distEls[i].value) : null;
+      const tms = timeEls[i].value ? parseInt(timeEls[i].value) : null;
+      if (dist || tms) splits.push({ split_number: i+1, distance: dist, time_ms: tms });
+    }
+    if (splits.length) {
+      await api('POST', `/races/${race.id}/splits`, splits);
+    }
+  }
+
+  // Refresh leaderboard
+  const results = await api('GET', `/heats/${heatId}/results`);
+  refreshLeaderboard(heatId, results);
+  alert('Results saved!');
+}
+
+function refreshLeaderboard(heatId, results) {
+  const el = document.getElementById('results-display');
+  if (!results.length) { el.innerHTML = '<div class="notice">No entries in this heat.</div>'; return; }
+
+  // Rank finishers
+  let rank = 0;
+  let prevTime = null;
+  const ranked = results.map((r, idx) => {
+    if (r.final_time_ms != null && !r.disqualified) {
+      if (r.final_time_ms !== prevTime) rank = idx + 1;
+      prevTime = r.final_time_ms;
+      return { ...r, rank };
+    }
+    return { ...r, rank: null };
+  });
+
+  el.innerHTML = `<table>
+    <thead>
+      <tr><th>Rank</th><th>Lane</th><th>Swimmer</th><th>Team</th><th>Time</th><th>Status</th><th>Splits</th></tr>
+    </thead>
+    <tbody>
+      ${ranked.map((r, i) => {
+        const rankBadge = r.rank === 1 ? `<span class="rank-badge rank-1">1</span>`
+          : r.rank === 2 ? `<span class="rank-badge rank-2">2</span>`
+          : r.rank === 3 ? `<span class="rank-badge rank-3">3</span>`
+          : r.rank ? `<span class="rank-badge rank-n">${r.rank}</span>`
+          : '—';
+        const status = r.disqualified
+          ? `<span class="badge badge-dq">DQ${r.dq_reason ? ': '+r.dq_reason : ''}</span>`
+          : r.final_time_ms != null ? `<span class="badge badge-ok">OK</span>`
+          : `<span class="badge badge-dns">DNS</span>`;
+        const hasSplits = r.splits && r.splits.length > 0;
+        const splitsBtn = hasSplits ? `<span class="split-toggle" onclick="toggleSplits(${i})">Show splits</span>` : '—';
+        const splitsRow = hasSplits ? `
+          <tr class="split-row" id="splits-row-${i}">
+            <td colspan="7">
+              <div class="splits-inner">
+                ${r.splits.map(s => `<span class="split-chip">Split ${s.split_number}${s.distance ? ' ('+s.distance+'m)' : ''}: ${fmtTime(s.time_ms)}</span>`).join('')}
+              </div>
+            </td>
+          </tr>` : '';
+        return `
+          <tr>
+            <td>${rankBadge}</td>
+            <td>${r.lane}</td>
+            <td><strong>${r.swimmer_name}</strong></td>
+            <td>${r.team || '—'}</td>
+            <td>${fmtTime(r.final_time_ms)}</td>
+            <td>${status}</td>
+            <td>${splitsBtn}</td>
+          </tr>${splitsRow}`;
+      }).join('')}
+    </tbody></table>`;
+}
+
+function toggleSplits(i) {
+  const row = document.getElementById(`splits-row-${i}`);
+  if (!row) return;
+  row.classList.toggle('open');
+  const toggle = row.previousElementSibling.querySelector('.split-toggle');
+  if (toggle) toggle.textContent = row.classList.contains('open') ? 'Hide splits' : 'Show splits';
+}
+
+// ===== Init =====
+window.addEventListener('DOMContentLoaded', () => {
+  loadSwimmers();
+});
+</script>
+</body>
+</html>
